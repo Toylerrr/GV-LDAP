@@ -59,13 +59,22 @@ def create_or_update_gamevault_user(user):
     else:
         print(f"Failed to create/update user {gamevault_user['username']} in GameVault")
 
-# Delete a user from GameVault
-def delete_gamevault_user(username):
-    response = requests.delete(f"{GAMEVAULT_API_URL}/users/{username}", auth=(GAMEVAULT_API_USER, GAMEVAULT_API_PASSWORD))
+# Get user ID by username from GameVault
+def get_gamevault_user_id(username):
+    response = requests.get(f"{GAMEVAULT_API_URL}/users/{username}", auth=(GAMEVAULT_API_USER, GAMEVAULT_API_PASSWORD))
     if response.status_code == 200:
-        print(f"User {username} deleted from GameVault")
+        user = response.json()
+        return user['id']
     else:
-        print(f"Failed to delete user {username} from GameVault")
+        raise Exception(f"Failed to retrieve user ID for {username}")
+
+# Delete a user from GameVault by user ID
+def delete_gamevault_user(user_id):
+    response = requests.delete(f"{GAMEVAULT_API_URL}/users/{user_id}", auth=(GAMEVAULT_API_USER, GAMEVAULT_API_PASSWORD))
+    if response.status_code == 200:
+        print(f"User with ID {user_id} deleted from GameVault")
+    else:
+        print(f"Failed to delete user with ID {user_id} from GameVault")
 
 # Main function
 def main():
@@ -89,7 +98,8 @@ def main():
         # Delete GameVault users not in LDAP
         users_to_delete = gamevault_usernames - ldap_usernames
         for username in users_to_delete:
-            delete_gamevault_user(username)
+            user_id = get_gamevault_user_id(username)
+            delete_gamevault_user(user_id)
             
         print("User synchronization completed successfully.")
     except Exception as e:
